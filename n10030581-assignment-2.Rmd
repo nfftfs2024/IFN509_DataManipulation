@@ -1,0 +1,283 @@
+---
+title: "IFN509 Portfolio2"
+author: "Chen-Yen Chou: n10030581"
+date: "10 May 2018"
+output: 
+  pdf_document: default
+  html_document: default
+---
+
+
+## TASK 1: Data Analysis
+
+This section is for importing the libraries that will be used to visualise data in the following tasks.
+```{r}
+# Import library ggplot2 and reshape2
+library(ggplot2)
+library(reshape2)
+```
+
+Import the given data of Uber usages in New York City from six different files, and combine them into one dataset.
+```{r}
+# Read the given csv files and stored them as matrices
+UberDataApr2014 = read.csv("uber-raw-data-apr14.csv")
+UberDataMay2014 = read.csv("uber-raw-data-may14.csv")
+UberDataJun2014 = read.csv("uber-raw-data-jun14.csv")
+UberDataJul2014 = read.csv("uber-raw-data-jul14.csv")
+UberDataAug2014 = read.csv("uber-raw-data-aug14.csv")
+UberDataSep2014 = read.csv("uber-raw-data-sep14.csv")
+# Using function rbind() to combine the six csv files into one dataset by rows
+UberData <- rbind(UberDataApr2014,UberDataMay2014,UberDataJun2014,UberDataJul2014,UberDataAug2014,UberDataSep2014)
+# Display summary of the Uber dataset
+summary(UberData)
+```
+
+
+# Task 1.1
+In this task, I firstly make a copy of the original dataset specifically for Task 1.1. As this task asks us to identify the weekday with the largest and smallest numbers of Uber pick-ups, so I then extract the time for every pick-up in the form of weekdays from the given Date.Time. Next, the row numbers of each weekday will be summed and displayed. Besides, the result will be transformed into a data frame and plotted into a bar chart by using "ggplot2".
+```{r}
+# Replicate the entire dataset into "UberDataForTask11"
+UberDataForTask11 <- UberData
+# Convert the given Date.Time into weekday form and add into a new column "weekday" in the matrix
+UberDataForTask11$weekday <- c(weekdays(as.Date(UberDataForTask11$Date.Time, format = "%m/%d/%Y")))
+# Group by the levels of the weekdays and calculate their repetitions
+UberDataWeekFac <- factor(UberDataForTask11$weekday, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+# Summarise the calculation into a table
+UberDataWeekTab <- table(UberDataWeekFac)
+# Convert it into a data frame for later chart visualisation
+UberDataWeekDf <- data.frame(UberDataWeekTab)
+# Rename the headers of the data frame
+names(UberDataWeekDf) <- c("Weekday", "Pickups")
+# Display the data frame
+UberDataWeekDf
+```
+
+```{r}
+library(scales)
+# Visualise the data frame into a gradient-coloured bar chart with "ggplot2"
+ggplot(UberDataWeekDf, aes(x=Weekday, y=Pickups, group=1, fill=Pickups)) + geom_bar(stat="identity") + labs(title="Uber Pick-up by Weekdays in New York") + scale_fill_gradient(low="#619EC9", high="#243B62", label=comma) + scale_y_continuous(label=comma)
+```
+
+Answer:
+According to the previous results, we can see that the largest pick-up number is appeared on Thursday, which has a number of 755145 during the timeframe of April to September 2014. On the contrary, the lowest pick-up number is appeard on Sunday, which only has a number of 490180.
+Besides, we can easily see from the bar chart that the pick-ups gradually increase from Monday and reach the peak on Thursday. Then, the number begins to decrease on the weekend until Sunday. In other words, the pick-up increases during weekdays, and declines on the weekend and hit the rock bottom on Sunday. 
+
+
+# Task 1.2 
+In this task, I firstly make a copy of the original dataset specifically for Task 1.2. As this task asks us to identify the pick-up trend over the months, so I then extract the time for every pick-up in the form of months from the given Date.Time. Next, the row numbers of each month will be summed and displayed. Also, the result will be transformed into a data frame and plotted into a bar chart and a line showing the trend over months by using "ggplot2".
+```{r}
+# Replicate the entire dataset into "UberDataForTask12"
+UberDataForTask12 <- UberData
+# Convert the given Date.Time into month form and add into a new column "month" in the matrix
+UberDataForTask12$month <- c(months(as.Date(UberData$Date.Time, format="%m/%d/%y")))
+# Group by the levels of the months and calculate their repetitions
+UberDataMonthFac <- factor(UberDataForTask12$month, levels = c("April", "May", "June", "July", "August", "September"))
+# Summarise the calculation into a table
+UberDataMonthTab <- table(UberDataMonthFac)
+# Convert it into a data frame for later chart visualisation
+UberDataMonthDf <- data.frame(UberDataMonthTab)
+# Rename the headers of the data frame
+names(UberDataMonthDf) <- c("Month", "Pickups")
+# Display the data frame
+UberDataMonthDf
+```
+
+```{r}
+# Visualise the data frame into a gradient-coloured bar chart and a red line and blue dots revealing the pick-up trend with "ggplot2"
+ggplot(UberDataMonthDf, aes(x=Month, y=Pickups, group=1, fill=Pickups)) + geom_bar(stat="identity") + labs(title="Uber Pick-up by Months in New York") + scale_fill_gradient(low="#619EC9", high="#243B62", label=comma) +  geom_line(colour = "red", size=1) + geom_point(alpha = 1, colour = "blue")
+```
+
+Answer:
+According to the previous results, we can easily see that the pick-up number is increasing throughout the timeframe between April and September 2014. That is, the trend of Uber pick-up over the months is growing, and has a sharp surge from August to September. In accordance with the data frame, the pick-up number in April is 564516, and it keeps increasing every month and ends up with 1028136 in September.  
+
+
+# Task 1.3
+In this task, I make a copy of the original dataset specifically for Task 1.3 at first. As this task asks us to identify the pick-up patterns over time of a day, so I then extract the time for every pick-up in the form of hours from the given Date.Time. Next, the row numbers of each hour will be summed and displayed. Lastly, the result will be transformed into a data frame and plotted into a bar chart and a line representing the trend within a day by using "ggplot2".
+```{r}
+# Replicate the entire dataset into "UberDataForTask13"
+UberDataForTask13 <- UberData
+# Convert the given Date.Time into hour form by using function strptime()
+UberHour <- format(strptime(UberDataForTask13$Date.Time, "%m/%d/%Y %H:%M:%S"),"%H:%M")
+# Replace the minutes of the Uber data with ":00", so that data can be clearly grouped by hours, and add into a new column "hour" in the matrix
+UberDataForTask13$hour <- sub(":[0-9][0-9]",":00", UberHour)
+# Group by the levels of the hours and calculate their repetitions
+UberDataHourFac <- factor(UberDataForTask13$hour, levels = c("00:00","01:00","02:00","03:00","04:00","05:00","06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"))
+# Summarise the calculation into a table
+UberDataHourTab <- table(UberDataHourFac)
+# Convert it into a data frame for later chart visualisation
+UberDataHourDf <- data.frame(UberDataHourTab)
+# Rename the headers of the data frame
+names(UberDataHourDf) <- c("Hour", "Pickups")
+# Display the data frame
+UberDataHourDf
+```
+
+```{r}
+# Visualise the data frame into a gradient-coloured bar chart and a red line and blue dots revealing the pick-up trend with "ggplot2"
+ggplot(UberDataHourDf, aes(x=Hour, y=Pickups, group=1, fill=Pickups)) + geom_bar(stat="identity") + labs(title="Uber Pick-up by Hours in New York") + scale_fill_gradient(low="#D6DFEC", high="#2874A6", label=comma) +  geom_line(colour = "red", size=1) + geom_point(alpha = 1, colour = "blue") + scale_y_continuous(label=comma) + theme(axis.text.x = element_text(angle=45, hjust=1, size=10))
+```
+
+Answer:
+According to the previous results, we can clearly see the trend over the hours within one day during April to September 2014. It can be concluded that the most popular timeframe in terms of Uber pick-up within one day is from 17:00 to 19:00, 336190 pick-ups from 17:00~18:00 and 324679 from 18:00~19:00. Also, it is apparent that there are two peak hours within one day, which is from 06:00 to 09:00 and 16:00 to 19:00. The pick-up number starts low in the midnight of a day and starts soaring from 05:00 in the morning and reaches the first peak hour around 07:00. Then, the number remains stable between 09:00 and 14:00. After 14:00, the pick-up begins to rapidly grow again and reaches the second peak hour around 16:00. Later on, the number starts to decrease after 18:00, and has a dramatic drop from 22:00 to 23:59.
+
+
+## TASK 2: Spatial Analysis Task
+This section is for importing the libraries of "ggmap" that will be used to visualise the spatial analysis.
+```{r}
+# Import library ggmap
+library(ggmap)
+```
+
+
+# Task 2.0
+In this task, I will visualise the longtitude and latitude data of Uber pick-ups in NYC on on a spatial map via point plots and density plots respectively. First of all, because of the computational limitation, I will extract 200000 data from six different csv files, in total 1200000 rows, instead of using the entire dataset of 4500000 rows only for Task 2.0. Next, two maps are created for the point plots and density plots. The map for point plots visualises a wider area of NYC, so that the distributions of Uber pick-up can be clearly seen. On the other hand, the map for density plots will focus on the central city area to better visualise the distributions among the popular pick-up area. Lastly, I use functions geom_point() and stat_density2d() to plot the point and density maps respectively.
+```{r}
+# Extract the first 200000 rows of data from six different months
+UberDataAprLess <- head(UberDataApr2014, 200000)
+UberDataMayLess <- head(UberDataMay2014, 200000)
+UberDataJunLess <- head(UberDataJun2014, 200000)
+UberDataJulLess <- head(UberDataJul2014, 200000)
+UberDataAugLess <- head(UberDataAug2014, 200000)
+UberDataSepLess <- head(UberDataSep2014, 200000)
+# Using function rbind() to combine the six datasets into one by rows
+UberDataLess <- rbind(UberDataAprLess,UberDataMayLess,UberDataJunLess,UberDataJulLess,UberDataAugLess,UberDataSepLess)
+# Create a map for the point plots, this map mainly focus on viewing the distributions around the great NYC area
+pmap <- get_map(location="New York City", maptype="roadmap", zoom=11)
+# Create a different map for the density plots using the longtitude and latitude coordinates, this map mainly focus on the most intensive pick-up area, Manhattan, Brooklyn and the airport.
+dmap <- get_map(location=c(-73.95, 40.75), zoom=12)
+# Create one more map for the density plots in Task 2.3. Because there will be 24 facets in the visualisation for different hours in one day, which will make each grid very small. So I decided to zoom in the visualisation to only displaying the Manhattan area, where is the the most intensive pick-up area.
+dmap1 <- get_map(location=c(-73.99, 40.745), zoom=13)
+# Visualise 1200000 rows of Uber pick-up data on the point plotted map with function geom_point() and the red dots
+ggmap(pmap) + geom_point(aes(x=UberDataLess$Lon, y=UberDataLess$Lat), data=UberDataLess, color="red", size=1/8, alpha=0.05) + ggtitle("Uber Pick-up Locations in New York (Point Plot)") + labs(x="Longtitude", y="Latitude")
+```
+
+```{r}
+# Visualise 1200000 rows of Uber pick-up data on the density plotted map with function stat_density2d() and the gradient colors of dark orange and red, and green contour lines.
+ggmap(dmap) + stat_density2d(aes(x=UberDataLess$Lon, y=UberDataLess$Lat, fill=..level.., alpha=0.03), alpha=0.3, size=3, bins= 10, geom="polygon", data=UberDataLess) + geom_density2d(data=UberDataLess, aes(x=Lon, y=Lat), alpha=0.5, color="#1ABB0F") + scale_fill_gradient(low="#873600", high="#FF0000") + ggtitle("Uber Pick-up Locations in New York (Density Plot)") + labs(x="Longtitude", y="Latitude")
+```
+
+Summary:
+According to the spatial visualisations, it is apparent that most of the Uber pick-ups are distributed in the east side of Hudson River, mainly in Manhattan and Brooklyn areas. There are also some pick-ups in the west side of Hudson River such as around the areas of Jersey City and Newark, but the numbers are low comparing to the area of NYC. In the Manhattan area, we can see that the density map shows that popular pick-up locations are places right south to the central park near the Midtown area such as time square and central station, and along the area to the bay. Besides, we can see that there are other places having busy Uber pick-ups around the Williamsburg and LaGuardia Ariport.
+
+
+# Task 2.1
+In this task, I will repeat the analysis I did for Task 1.1, but showing the result through spatial visualisations. First of all, the dataset for implementing Task 1.1 will be taken and added into the function geom_point() to visualise the Uber pick-ups by weekday through the point plotted map with the blue dots. Then the function stat_density2d() will also be used to visualise the Uber pick-ups by weekday through the density plotted map. Both maps will be displayed in facets according to seven different weekdays. 
+```{r}
+# Ensure the order of the factors of weekdays in the previous dataset is set.
+UberDataForTask11$weekday <- factor(UberDataForTask11$weekday, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"), ordered = TRUE)
+# Visualise Uber pick-up data by weekday on the point plotted map with function geom_point() and the blue dots, and separated the results by using facet_wrap(~weekday). Also, labels for the map and x and y axis are defined.
+ggmap(pmap) + geom_point(data=UberDataForTask11, aes(x=UberDataForTask11$Lon, y=UberDataForTask11$Lat), color="blue", size=1/20, alpha=0.03) + ggtitle("Uber Pick-up Locations in New York by weekdays (Point Plot)") + labs(x="Longtitude", y="Latitude") + theme(axis.text.x=element_text(hjust=1, angle=90)) + facet_wrap(~weekday)
+```
+
+```{r}
+# Visualise Uber pick-up data by weekday on the density plotted map with function stat_density2d() and the gradient colors of dark orange and red, and separated them by using facet_wrap(~weekday). Also, labels for the map and x and y axis are defined.
+ggmap(dmap) + stat_density2d(aes(x=UberDataForTask11$Lon, y=UberDataForTask11$Lat, fill=..level.., alpha=0.03), alpha=0.3, size=3, bins= 10, geom="polygon", data=UberDataForTask11) + geom_density2d(data=UberDataForTask11, aes(x=Lon, y=Lat), alpha=0.1, size=0.01, color="#1ABB0F") + scale_fill_gradient(low="#873600", high="#FF0000") + ggtitle("Uber Pick-up Locations in New York by weekdays (Density Plot)") + labs(x="Longtitude", y="Latitude") + facet_wrap(~weekday) + theme(axis.text.x=element_text(hjust=1, angle=90))
+```
+
+Summary:
+According to the spatial visualisations, it is apparent that the point plotted map shows that most of the Uber pick-ups are distributed around the areas of the city center - Manhattan, Brooklyn, Queens and Bronx, and the areas across Hudson River such as Honoken, Newport and Weehawken around Jersey City. Moreover, the spatial distributions illustrates that there are slight differences among weekdays. It is notable that the most sparse distribution is on Sunday, and it becomes denser and denser from Tuesday to Thurday. Then the points shrinks during Saturday and Sunday. Overall, it can be concluded that people around the NYC areas has a increasing tendency of using Uber during weekdays, while the usage decreases during the weekends. Besides, we can see that there are other places having busy Uber pick-ups around the Williamsburg and LaGuardia Ariport.
+
+
+# Task 2.2
+In this task, I will repeat the analysis I did for Task 1.2, but showing the result through spatial visualisations. First of all, the dataset for implementing Task 1.2 will be taken and added into the function geom_point() to visualise the Uber pick-ups by month through the point plotted map with the green dots. Then the function stat_density2d() will also be used to visualise the Uber pick-ups by month through the density plotted map. Both maps will be displayed in facets according to six different months. 
+```{r}
+# Ensure the order of the factors of months in the previous dataset is set.
+UberDataForTask12$month <- factor(UberDataForTask12$month, levels = c("April", "May", "June", "July", "August", "September"), ordered = TRUE)
+# Visualise Uber pick-up data by month on the point plotted map with function geom_point() and the green dots, and separate the results by using facet_wrap(~month). Also, labels for the map and x and y axis are defined.
+ggmap(pmap) + geom_point(data=UberDataForTask12, aes(x=UberDataForTask12$Lon, y=UberDataForTask12$Lat), color="#1E8449", size=1/20, alpha=0.05) + ggtitle("Uber Pick-up Locations in New York by months (Point Plot)") + labs(x="Longtitude", y="Latitude") + theme(axis.text.x=element_text(hjust=1, angle=90)) + facet_wrap(~month)
+```
+
+```{r}
+# Visualise Uber pick-up data by month on the density plotted map with function stat_density2d() and the gradient colors of dark orange and red, and separated them by using facet_wrap(~month). Also, labels for the map and x and y axis are defined.
+ggmap(dmap) + stat_density2d(aes(x=UberDataForTask12$Lon, y=UberDataForTask12$Lat, fill=..level.., alpha=0.03), alpha=0.3, size=3, bins= 10, geom = "polygon", data=UberDataForTask12) + geom_density2d(data=UberDataForTask12, aes(x=Lon, y=Lat), alpha=0.1, size=0.01, color="#1ABB0F") + scale_fill_gradient(low="#873600", high="#FF0000") + ggtitle("Uber Pick-up Locations in New York by months (Density Plot)") + labs(x="Longtitude", y="Latitude") + facet_wrap(~month) + theme(axis.text.x=element_text(hjust=1, angle=90))
+```
+
+Summary:
+According to the spatia visualisations, it is apparent that the point plooted map shows that most of the Uber pick-ups are distributed around the areas of the city center - Manhattan, Brooklyn, Queens and Bronx, and the areas across Hudson River such as Honoken, Newport and Weehawken around Jersey City. Moreover, the spatial distributions illustrates that there are differences between months. It is notable that the distribution in April is quite sparse, and it becomes denser and denser since then until September. Overall, it can be concluded that people around all the NYC areas has a growing tendency of using Uber during the period of April to September in 2014.
+Also, the result of the density plotted map corresponds to the result of Task 2.0 that it can be obviously seen that popular Uber pick-up locations are generally distributed around the areas starting from the south to the Central park to the bay in Manhattan. Besides, we can see that there are other places having busy Uber pick-ups around the Williamsburg and LaGuardia Ariport.
+
+
+# Task 2.3
+In this task, I will repeat the analysis I did for Task 1.3, but showing the result through spatial visualisations. First of all, the dataset for implementing Task 1.3 will be taken and added into the function geom_point() to visualise the Uber pick-ups by hour through the point plotted map with the purple dots. Then the function stat_density2d() will also be used to visualise the Uber pick-ups by hour through the density plotted map. Both maps will be displayed in facets according to 24 different hours. 
+```{r}
+# Visualise Uber pick-up data by hour on the point plotted map with function geom_point() and the purple dots, and separate the results by using facet_wrap(~hour). Also, labels for the map and x and y axis are defined.
+ggmap(pmap) + geom_point(data=UberDataForTask13, aes(x=UberDataForTask13$Lon, y=UberDataForTask13$Lat), color="#6C3483", size=1/20, alpha=0.05) + ggtitle("Uber Pick-up Locations in New York by hours (Point Plot)") + labs(x="Longtitude", y="Latitude") + theme(axis.text.x=element_text(hjust=1, angle=90)) + facet_wrap(~hour) + theme(axis.text.x=element_text(hjust=1, angle=90))
+```
+
+```{r}
+# Visualise Uber pick-up data by hour on the density plotted map with function stat_density2d() and the gradient colors of dark orange and red, and separate them by using facet_wrap(~hour). Also, labels for the map and x and y axis are defined.
+ggmap(dmap1) + stat_density2d(aes(x=UberDataForTask13$Lon, y=UberDataForTask13$Lat, fill=..level.., alpha=0.03), alpha=0.3, size=3, bins= 10, geom="polygon", data=UberDataForTask13) + geom_density2d(data=UberDataForTask13, aes(x=Lon, y=Lat), alpha=0.1, size=0.01, color="#1ABB0F") + scale_fill_gradient(low="#873600", high="#FF0000") + ggtitle("Uber Pick-up Locations in New York by hours (Density Plot)") + labs(x="Longtitude", y="Latitude") + facet_wrap(~hour) + theme(axis.text.x=element_text(hjust=1, angle=90))
+```
+
+Summary:
+According to the spatial visualisations, it is apparent that the point plotted map shows the Uber pick-up numbers are comparatively small during the time of 01:00~04:00. Starting from 05:00, there is a growing numbers of Uber pick-ups throughout the whole day. And we can see that the most dense distributions occur from 17:00~19:00 within one day. Then the numbers shrink from 21:00 until the midnight. Another notable fact is that although the distributions in city center areas such as Manhattan, Brooklyn, Queens and Bronx remain similar during 07:00~21:00, the areas west to the NYC and close to Newark and Elizabeth see a dramatic surge on Uber pick-ups from 15:00 to 20:00.
+In addtion, the result of the density plotted map corresponds to the result of Task 2.0 that it can be seen that popular Uber pick-up locations are generally distributed around the areas starting from the south to the Central park to the bay in Manhattan. Furthermore, there are several spots in this area that have the most intensive pick-ups displayed in the red including the Midtown area, Trump Tower, Grand central terminal and Chelsea Market... We can see that although the pick-up volumes for different hours vary, the pick-up hot zones are mostly similar from time to time.
+
+
+## Task 3 mtcars
+
+# Task 3.1
+In this task, I first create an empty data frame containing a matrix, which will be used to store the Cosine similarities between every pair of the mtcars automobiles. Then I use 2 FOR loops to indicate to the column and row numbers of the Cosine data frame to add the result of the calculation. The equation of cosine similarity is taken reference from the lecture slide and used to calculate the result for each pair of automobiles. After that, the row and column names will be renamed according to the car names from mtcars, and then finally displayed.
+```{r}
+# Create a Cosine data frame containing an empty matrix
+Cosine <- data.frame(matrix())
+# Since mtcars has 32 observations, so I set a FOR x loop to represent the row numbers of the Cosine data frame
+for (x in 1:32){
+# Since mtcars has 32 observations, so I set a FOR y loop to represent the column numbers of the Cosine data frame
+ for (y in 1:32){
+# Include the cosine similarity formula in R and store the calculation result into the data frame for pairs of automobiles
+   Cosine[x,y] = (sum(mtcars[x,]*mtcars[y,]))/(sqrt(sum(mtcars[x,]^2))*sqrt(sum(mtcars[y,]^2)))
+ }
+}
+# Rename the row names to the car names
+rownames(Cosine) <- rownames(mtcars)
+# Rename the column names to the car names
+colnames(Cosine) <- rownames(mtcars)
+# Display the result
+Cosine
+```
+
+
+
+
+# Task 3.2
+In this task, I make a copy of the original dataset specifically for Task 3.2 at first. Then I replace the "1" similarities with "0", so that I can find the most similar car for each car (Largest similarity in the matrix) besides themselves. Next, a 32x2 matrix will be created to store the result of the automobile and their most similar automobile. A FOR loop is then created to fill the columns of the car names, and the car names of their most similar pair by utilising the function which.max() on the cosine data frame, and then the matrix is finally displayed.
+```{r}
+# Replicate the data frame for Task 3.2
+Cosine32 <- Cosine
+# Create a FOR loop for the 32 automobiles to replace the similarities of 1
+for (i in 1:32){
+# Replace the cosine similarity on the exactly same automobile (e.g. cosine similarity between Mazda RX4 and Mazda RX4) with 0, so that they will not affect later similarity comparisons
+   Cosine32[i,i]=0
+}
+# Create a set of values storing the names of 32 automobiles
+AutoNames <- colnames(Cosine32)
+# Create a vector containing 64 elements, which will be used to create a 32x2 matrix
+SimilarAuto <- c(1:64)
+# Create a 32x2 matrix for storing the automobile and their most similar automobile
+SimilarAutoMat <- matrix(SimilarAuto,32,2)
+# Rename the headers
+colnames(SimilarAutoMat) <- c("Automobile","Most Similar Automobile")
+# Create a FOR loop for determining the most similar cars for each automobile
+for (i in 1:32){
+# Fill the first columns with the 32 car names
+    SimilarAutoMat[i,1] = rownames(Cosine32[i,])
+# Use function which.max() to determine the index of the most similar automobile, then use the index to search for the car name among the previously created name dataset, then fill the car name into the second column 
+    SimilarAutoMat[i,2] = AutoNames[which.max(Cosine32[i,])]
+}
+# Display the result
+SimilarAutoMat
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
